@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CommerceLab.Api/CommerceLab.Api.csproj" />
+    <Project Path="src/CommerceLab.Shop.Mvc/CommerceLab.Shop.Mvc.csproj" />
+  </Folder>
+</Solution>
