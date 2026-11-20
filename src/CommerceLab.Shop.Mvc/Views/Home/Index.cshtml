@@ -5,7 +5,22 @@
 }
 
 <h1>Sản phẩm</h1>
+<form asp-controller="Home" asp-action="Index" method="get" class="mb-3">
 
+    <input type="hidden" name="page" value="1" />
+
+    <label asp-for="Sort">Sắp xếp</label>
+
+    <select asp-for="Sort" class="form-select mb-2">
+        <option value="id">Mặc định theo ID</option>
+        <option value="price_asc">Giá tăng dần</option>
+        <option value="price_desc">Giá giảm dần</option>
+    </select>
+
+    <button type="submit" class="btn btn-primary">
+        Áp dụng
+    </button>
+</form>
 <table class="table">
     <thead>
         <tr>
@@ -17,7 +32,11 @@
         @foreach (var product in Model.Items)
         {
             <tr>
-                <td>@product.Name</td>
+                <td>
+                    <a asp-controller="Home" asp-action="Details" asp-route-id="@product.Id">
+                        @product.Name
+                    </a>
+                </td>
                 <td class="text-end">@product.PriceText</td>
             </tr>
         }
@@ -39,14 +58,16 @@
 <nav aria-label="Phân trang sản phẩm">
     @if (Model.HasPreviousPage)
     {
-        <a asp-controller="Home" asp-action="Index" asp-route-page="@(Model.Page - 1)" class="btn btn-outline-primary">
+        <a asp-controller="Home" asp-action="Index" asp-route-page="@(Model.Page - 1)" asp-route-sort="@Model.Sort"
+           class="btn btn-outline-primary">
             Trang trước
         </a>
     }
 
     @if (Model.HasNextPage)
     {
-        <a asp-controller="Home" asp-action="Index" asp-route-page="@(Model.Page + 1)" class="btn btn-outline-primary">
+        <a asp-controller="Home" asp-action="Index" asp-route-page="@(Model.Page + 1)" asp-route-sort="@Model.Sort"
+           class="btn btn-outline-primary">
             Trang sau
         </a>
     }

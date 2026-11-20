@@ -16,4 +16,6 @@ public class ProductListViewModel
     public bool HasPreviousPage => Page > 1;
 
     public bool HasNextPage => Page < TotalPages;
+    public string Sort { get; set; } = "id";
+
 }

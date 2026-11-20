@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using CommerceLab.Shop.Mvc.Models;
 using System.Globalization;
 using System.Text.Json;
+using System.Net;
 
 namespace CommerceLab.Shop.Mvc.Controllers;
 
@@ -16,11 +17,18 @@ public class HomeController : Controller
         _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
-    public async Task<IActionResult> Index(int page = 1)
+    public async Task<IActionResult> Index(int page = 1, string sort = "id")
     {
         if (!ModelState.IsValid || page < 1)
         {
             return BadRequest("Số trang phải là số nguyên lớn hơn hoặc bằng 1.");
+        }
+
+        if (sort != "id"
+            && sort != "price_asc"
+            && sort != "price_desc")
+        {
+            return BadRequest("Cách sắp xếp không hợp lệ.");
         }
 
         const int pageSize = 2;
@@ -33,7 +41,7 @@ public class HomeController : Controller
         try
         {
             json = await client.GetStringAsync(
-                $"api/products?page={page}&pageSize={pageSize}",
+                $"api/products?page={page}&pageSize={pageSize}&sort={sort}",
                 HttpContext.RequestAborted);
         }
         catch (HttpRequestException exception)
@@ -68,6 +76,7 @@ public class HomeController : Controller
 
             products.Add(new ProductListItemViewModel
             {
+                Id = item.GetProperty("id").GetInt32(),
                 Name = name ?? string.Empty,
                 PriceText = price.ToString("N0", culture) + " đ"
             });
@@ -78,16 +87,79 @@ public class HomeController : Controller
             Items = products,
             Page = document.RootElement.GetProperty("page").GetInt32(),
             PageSize = document.RootElement.GetProperty("pageSize").GetInt32(),
-            TotalCount = document.RootElement.GetProperty("totalCount").GetInt32()
+            TotalCount = document.RootElement.GetProperty("totalCount").GetInt32(),
+            Sort = sort
         };
 
         if (model.Page > 1 && model.Items.Count == 0)
         {
-            return RedirectToAction(nameof(Index), new { page = 1 });
+            return RedirectToAction(nameof(Index), new { page = 1, sort });
         }
 
         return View(model);
     }
+
+    [HttpGet]
+public async Task<IActionResult> Details(int id)
+{
+    if (!ModelState.IsValid || id <= 0)
+    {
+        return BadRequest("ID sản phẩm phải là số nguyên lớn hơn 0.");
+    }
+
+    using var client =
+        _httpClientFactory.CreateClient("CommerceLabApi");
+
+    string json;
+
+    try
+    {
+        json = await client.GetStringAsync(
+            $"api/products/{id}",
+            HttpContext.RequestAborted);
+    }
+    catch (HttpRequestException exception)
+        when (exception.StatusCode == HttpStatusCode.NotFound)
+    {
+        Response.StatusCode = StatusCodes.Status404NotFound;
+        return View("ProductNotFound");
+    }
+    catch (HttpRequestException exception)
+    {
+        _logger.LogWarning(
+            exception,
+            "Không thể tải sản phẩm {ProductId} từ API.",
+            id);
+
+        Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+        return View("CatalogUnavailable");
+    }
+    catch (OperationCanceledException exception)
+        when (!HttpContext.RequestAborted.IsCancellationRequested)
+    {
+        _logger.LogWarning(
+            exception,
+            "Hết thời gian chờ API khi tải sản phẩm {ProductId}.",
+            id);
+
+        Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+        return View("CatalogUnavailable");
+    }
+
+    using var document = JsonDocument.Parse(json);
+    var product = document.RootElement;
+
+    var model = new ProductDetailsViewModel
+    {
+        Id = product.GetProperty("id").GetInt32(),
+        Name = product.GetProperty("name").GetString() ?? string.Empty,
+        PriceText = product.GetProperty("price")
+            .GetDecimal()
+            .ToString("N0", CultureInfo.GetCultureInfo("vi-VN")) + " đ"
+    };
+
+    return View(model);
+}
 
     public IActionResult Privacy()
     {

@@ -1,0 +1,14 @@
+@model ProductDetailsViewModel
+
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<h1>@Model.Name</h1>
+
+<p>Mã sản phẩm: @Model.Id</p>
+<p>Giá: <strong>@Model.PriceText</strong></p>
+
+<a asp-controller="Home" asp-action="Index">
+    Quay lại danh sách
+</a>
