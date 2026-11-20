@@ -24,7 +24,19 @@ public class ProductService
             {
                 Id = 3,
                 Name = "Tai nghe",
-                Price = 450000m
+                Price = 150000m
+            },
+            new ProductDto
+            {
+                Id = 4,
+                Name = "Tai nghe có dây",
+                Price = 250000m
+            },
+            new ProductDto
+            {
+                Id = 5,
+                Name = "Màn hình",
+                Price = 350000m
             }
         };
     }
@@ -33,5 +45,44 @@ public class ProductService
     {
         return GetProducts()
             .FirstOrDefault(product => product.Id == id);
+    }
+
+    public ProductPageDto GetPage(int page, int pageSize, string sort)
+    {
+        var source = GetProducts();
+
+        var ordered = source.OrderBy(product => product.Id);
+
+        if (sort == "price_asc")
+        {
+            ordered = source
+                .OrderBy(product => product.Price)
+                .ThenBy(product => product.Id);
+        }
+        else if (sort == "price_desc")
+        {
+            ordered = source
+                .OrderByDescending(product => product.Price)
+                .ThenBy(product => product.Id);
+        }
+
+        var products = ordered.ToArray();
+
+        long offset = ((long)page - 1) * pageSize;
+
+        var items = offset >= products.Length
+            ? Array.Empty<ProductDto>()
+            : products
+                .Skip((int)offset)
+                .Take(pageSize)
+                .ToArray();
+
+        return new ProductPageDto
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = products.Length
+        };
     }
 }

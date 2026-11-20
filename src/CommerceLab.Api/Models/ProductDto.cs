@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 namespace CommerceLab.Api.Models;
 
 public class ProductDto

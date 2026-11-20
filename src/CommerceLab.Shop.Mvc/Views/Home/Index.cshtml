@@ -1,4 +1,4 @@
-﻿@model List<ProductListItemViewModel>
+﻿@model ProductListViewModel
 
 @{
     ViewData["Title"] = "Sản phẩm";
@@ -14,7 +14,7 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (var product in Model)
+        @foreach (var product in Model.Items)
         {
             <tr>
                 <td>@product.Name</td>
@@ -22,4 +22,32 @@
             </tr>
         }
     </tbody>
+    @if (Model.TotalCount == 0)
+    {
+        <p>Chưa có sản phẩm.</p>
+    }
+    else
+    {
+        <p>
+            Trang @Model.Page / @Model.TotalPages
+            — Tổng cộng @Model.TotalCount sản phẩm
+        </p>
+    }
+
+    
 </table>
+<nav aria-label="Phân trang sản phẩm">
+    @if (Model.HasPreviousPage)
+    {
+        <a asp-controller="Home" asp-action="Index" asp-route-page="@(Model.Page - 1)" class="btn btn-outline-primary">
+            Trang trước
+        </a>
+    }
+
+    @if (Model.HasNextPage)
+    {
+        <a asp-controller="Home" asp-action="Index" asp-route-page="@(Model.Page + 1)" class="btn btn-outline-primary">
+            Trang sau
+        </a>
+    }
+</nav>

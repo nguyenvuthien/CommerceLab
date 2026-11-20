@@ -16,8 +16,15 @@ public class HomeController : Controller
         _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(int page = 1)
     {
+        if (!ModelState.IsValid || page < 1)
+        {
+            return BadRequest("Số trang phải là số nguyên lớn hơn hoặc bằng 1.");
+        }
+
+        const int pageSize = 2;
+
         using var client =
             _httpClientFactory.CreateClient("CommerceLabApi");
 
@@ -26,7 +33,7 @@ public class HomeController : Controller
         try
         {
             json = await client.GetStringAsync(
-                "api/products",
+                $"api/products?page={page}&pageSize={pageSize}",
                 HttpContext.RequestAborted);
         }
         catch (HttpRequestException exception)
@@ -54,7 +61,7 @@ public class HomeController : Controller
         var products = new List<ProductListItemViewModel>();
         var culture = CultureInfo.GetCultureInfo("vi-VN");
 
-        foreach (var item in document.RootElement.EnumerateArray())
+        foreach (var item in document.RootElement.GetProperty("items").EnumerateArray())
         {
             var name = item.GetProperty("name").GetString();
             var price = item.GetProperty("price").GetDecimal();
@@ -66,7 +73,20 @@ public class HomeController : Controller
             });
         }
 
-        return View(products);
+        var model = new ProductListViewModel
+        {
+            Items = products,
+            Page = document.RootElement.GetProperty("page").GetInt32(),
+            PageSize = document.RootElement.GetProperty("pageSize").GetInt32(),
+            TotalCount = document.RootElement.GetProperty("totalCount").GetInt32()
+        };
+
+        if (model.Page > 1 && model.Items.Count == 0)
+        {
+            return RedirectToAction(nameof(Index), new { page = 1 });
+        }
+
+        return View(model);
     }
 
     public IActionResult Privacy()
